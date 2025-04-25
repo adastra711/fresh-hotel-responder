@@ -1,5 +1,5 @@
 {
-  "name": "hotel-review-responder-api",
+  "name": "fresh-hotel-responder-functions",
   "version": "1.0.0",
   "description": "Azure Functions for hotel review responder",
   "scripts": {

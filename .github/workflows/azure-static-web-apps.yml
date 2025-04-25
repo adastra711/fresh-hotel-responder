@@ -25,7 +25,7 @@ jobs:
         run: npm run build
       - name: Build Azure Functions
         run: |
-          cd api
+          cd functions
           npm install
           npm run build
       - name: Build And Deploy
@@ -36,7 +36,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
-          api_location: "api"
+          api_location: "functions"
           output_location: "out"
           app_build_command: "npm run build"
-          api_build_command: "cd api && npm install && npm run build" 
+          api_build_command: "cd functions && npm install && npm run build" 

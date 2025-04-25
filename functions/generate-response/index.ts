@@ -1,4 +1,4 @@
-import { HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 
 interface RequestBody {
@@ -15,9 +15,9 @@ const client = new OpenAIClient(
 
 const DEPLOYMENT_NAME = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4-turbo";
 
-export async function generateResponse(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
   try {
-    const body = await request.json() as RequestBody;
+    const body = req.body as RequestBody;
     const { userName, userTitle, propertyName, reviewText } = body;
 
     const prompt = `You are a professional hotel manager. Write a personalized response to the following guest review. The response should be warm, professional, and address specific points mentioned in the review. Keep the response under 500 characters.
@@ -55,21 +55,23 @@ ${propertyName}`;
 
     const generatedResponse = response.choices[0]?.message?.content || '';
 
-    return {
+    context.res = {
       status: 200,
-      jsonBody: { response: generatedResponse },
+      body: { response: generatedResponse },
       headers: {
         'Content-Type': 'application/json'
       }
     };
   } catch (error) {
-    context.error('Error generating response:', error);
-    return {
+    context.log.error('Error generating response:', error);
+    context.res = {
       status: 500,
-      jsonBody: { error: 'Failed to generate response' },
+      body: { error: 'Failed to generate response' },
       headers: {
         'Content-Type': 'application/json'
       }
     };
   }
-} 
+};
+
+export default httpTrigger; 

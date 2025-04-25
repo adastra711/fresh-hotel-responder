@@ -4,7 +4,7 @@
       "authLevel": "function",
       "type": "httpTrigger",
       "direction": "in",
-      "name": "request",
+      "name": "req",
       "methods": [
         "post"
       ]
@@ -12,7 +12,7 @@
     {
       "type": "http",
       "direction": "out",
-      "name": "$return"
+      "name": "res"
     }
   ],
   "scriptFile": "../dist/generate-response/index.js"
