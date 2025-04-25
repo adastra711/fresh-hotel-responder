@@ -16,5 +16,11 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/generate-response/index.js"
+  "scriptFile": "../dist/generate-response/index.js",
+  "cors": {
+    "allowedOrigins": [
+      "*"
+    ],
+    "supportCredentials": true
+  }
 } 

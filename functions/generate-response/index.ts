@@ -19,11 +19,28 @@ const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
 ): Promise<void> {
+  // Set CORS headers
+  context.res = {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Content-Type': 'application/json'
+    }
+  };
+
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === 'OPTIONS') {
+    context.res.status = 204;
+    return;
+  }
+
   try {
     const { userName, userTitle, propertyName, reviewText } = req.body;
 
     if (!userName || !userTitle || !propertyName || !reviewText) {
       context.res = {
+        ...context.res,
         status: 400,
         body: {
           error: "Missing required fields. Please provide userName, userTitle, propertyName, and reviewText.",
@@ -68,6 +85,7 @@ The response should:
     }
 
     context.res = {
+      ...context.res,
       status: 200,
       body: {
         response: generatedResponse,
@@ -76,6 +94,7 @@ The response should:
   } catch (error) {
     context.log.error("Error generating response:", error);
     context.res = {
+      ...context.res,
       status: 500,
       body: {
         error: "An error occurred while generating the response. Please try again later.",

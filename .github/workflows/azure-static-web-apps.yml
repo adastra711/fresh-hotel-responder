@@ -26,6 +26,11 @@ jobs:
         run: npm install
       - name: Build React app
         run: npm run build
+      - name: Verify build output
+        run: |
+          ls -la build
+          echo "Build directory contents:"
+          find build -type f
       - name: Build Azure Functions
         run: |
           cd functions
