@@ -27,10 +27,15 @@ function App() {
         body: JSON.stringify(formData),
       });
 
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`Received non-JSON response: ${await res.text()}`);
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to generate response');
+        throw new Error(data.error || data.details || 'Failed to generate response');
       }
 
       if (!data.response) {
@@ -39,9 +44,14 @@ function App() {
 
       setResponse(data.response);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      let errorMessage = 'An unexpected error occurred';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        console.error('Error details:', err);
+      } else {
+        console.error('Unknown error:', err);
+      }
       setError(`An error occurred while generating the response: ${errorMessage}`);
-      console.error('Error details:', err);
     } finally {
       setLoading(false);
     }
@@ -151,7 +161,8 @@ function App() {
 
           {error && (
             <div className="mt-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded text-sm">
-              {error}
+              <p className="font-medium mb-1">Error:</p>
+              <p className="whitespace-pre-wrap">{error}</p>
             </div>
           )}
 

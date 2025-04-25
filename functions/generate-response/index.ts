@@ -1,35 +1,43 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 
-interface RequestBody {
-  userName: string;
-  userTitle: string;
-  propertyName: string;
-  reviewText: string;
-}
-
-// Validate environment variables
-const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-const apiKey = process.env.AZURE_OPENAI_API_KEY;
-const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-35-turbo";
-
-if (!endpoint || !apiKey) {
-  console.error('Missing required environment variables:');
-  console.error('AZURE_OPENAI_ENDPOINT:', endpoint ? 'set' : 'missing');
-  console.error('AZURE_OPENAI_API_KEY:', apiKey ? 'set' : 'missing');
-  throw new Error('Missing required Azure OpenAI configuration');
-}
-
+// Initialize the Azure OpenAI client with hardcoded values
 const client = new OpenAIClient(
-  endpoint,
-  new AzureKeyCredential(apiKey)
+  "https://pgmai.openai.azure.com/", // Your Azure OpenAI endpoint
+  new AzureKeyCredential("Ct9JSYy5Ewlwn9NnWmAik6ynJLl3VvJ9vodQTC3DTn5G9hgnrwnZJQQJ99BDACYeBjFXJ3w3AAABACOG1FKb") // Your Azure OpenAI API key
 );
+
+const DEPLOYMENT_NAME = "gpt-4-turbo"; // Your model deployment name
+
+const SYSTEM_PROMPT = `You are a professional hotel manager tasked with replying to guest reviews in a warm, personalized tone. When given:
+
+• A guest review
+• The manager's name
+• The manager's title
+• The property name
+
+You must craft a response that:
+1. References specific details from the review (e.g. things they praised or issues they raised)
+2. Thanks them for their feedback
+3. Apologizes or acknowledges any shortfalls, if applicable
+4. Highlights any actions taken or improvements planned
+5. Closes with the exact format below
+
+Response format:
+
+Dear Guest,
+
+[Your tailored response text here, ideally 3–5 sentences.]
+
+Warm Regards,
+{manager_name}
+{manager_title}
+{property_name}`;
 
 const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
 ): Promise<void> {
-  // Set CORS headers
   context.res = {
     headers: {
       'Access-Control-Allow-Origin': '*',
@@ -46,74 +54,56 @@ const httpTrigger: AzureFunction = async function (
   }
 
   try {
-    const { userName, userTitle, propertyName, reviewText } = req.body;
+    const { userName, userTitle, propertyName, reviewText } = req.body || {};
 
+    // Basic validation
     if (!userName || !userTitle || !propertyName || !reviewText) {
-      context.res = {
-        ...context.res,
-        status: 400,
-        body: {
-          error: "Missing required fields. Please provide userName, userTitle, propertyName, and reviewText.",
-        },
+      context.res.status = 400;
+      context.res.body = {
+        error: "Missing required fields. Please provide userName, userTitle, propertyName, and reviewText."
       };
       return;
     }
 
-    const prompt = `You are ${userName}, ${userTitle} at ${propertyName}. Write a professional and friendly response to the following guest review:
+    // Format the user message as a JSON object
+    const userMessage = JSON.stringify({
+      review: reviewText,
+      manager_name: userName,
+      manager_title: userTitle,
+      property_name: propertyName
+    }, null, 2);
 
-${reviewText}
-
-The response should:
-1. Thank the guest for their review
-2. Address any specific points mentioned in the review
-3. Be warm and professional
-4. End with a sincere invitation to return
-5. Be between 100-200 words`;
-
-    context.log.info('Calling Azure OpenAI with deployment:', deploymentName);
-    
+    // Generate the response using Azure OpenAI
     const response = await client.getChatCompletions(
-      deploymentName,
+      DEPLOYMENT_NAME,
       [
         {
-          role: "system",
-          content: "You are a professional hotel manager writing responses to guest reviews.",
+          role: 'system',
+          content: SYSTEM_PROMPT
         },
         {
-          role: "user",
-          content: prompt,
-        },
+          role: 'user',
+          content: userMessage
+        }
       ],
       {
-        temperature: 0.7,
         maxTokens: 500,
+        temperature: 0.7,
       }
     );
 
-    const generatedResponse = response.choices[0]?.message?.content;
+    const generatedResponse = response.choices[0]?.message?.content || '';
 
-    if (!generatedResponse) {
-      throw new Error("No response generated from Azure OpenAI");
-    }
-
-    context.res = {
-      ...context.res,
-      status: 200,
-      body: {
-        response: generatedResponse,
-      },
+    context.res.status = 200;
+    context.res.body = {
+      response: generatedResponse
     };
   } catch (error) {
-    context.log.error("Error generating response:", error);
-    context.log.error("Error details:", JSON.stringify(error, null, 2));
-    
-    context.res = {
-      ...context.res,
-      status: 500,
-      body: {
-        error: "An error occurred while generating the response. Please try again later.",
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+    context.log.error('Error generating response:', error);
+    context.res.status = 500;
+    context.res.body = {
+      error: 'Failed to generate response',
+      details: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 };
