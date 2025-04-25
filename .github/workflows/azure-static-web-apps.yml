@@ -19,7 +19,8 @@ jobs:
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: "eb01f29a79714857364120b513b2ec4343d95cf69f3a629ee29f84b6e9723cbe06-31986893-2c98-4a50-879b-d80add72589401026120b8de0b10"
+          # Get this from Azure Portal -> Your Static Web App -> Manage deployment token
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
