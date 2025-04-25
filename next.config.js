@@ -8,7 +8,7 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
-  output: 'standalone',
+  output: 'export',
   images: {
     unoptimized: true,
   },
