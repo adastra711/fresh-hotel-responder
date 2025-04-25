@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@azure/functions": "^3.5.1",
-    "@azure/openai": "^1.0.0"
+    "@azure/openai": "^1.0.0-beta.6"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
