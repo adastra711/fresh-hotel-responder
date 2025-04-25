@@ -3,7 +3,9 @@ import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 
 function getRequiredEnvVar(name: string): string {
   console.log(`Checking for ${name}...`);
-  console.log(`Current env vars available:`, Object.keys(process.env));
+  console.log(`Current env vars available:`, Object.keys(process.env).filter(key => !key.toLowerCase().includes('key')));
+  console.log('Node environment:', process.env.NODE_ENV);
+  console.log('Runtime environment:', process.env.RUNTIME_ENVIRONMENT);
   
   const value = process.env[name];
   if (!value) {
@@ -12,6 +14,11 @@ function getRequiredEnvVar(name: string): string {
   }
   
   console.log(`Found ${name} with length: ${value.length}`);
+  if (name === 'AZURE_OPENAI_ENDPOINT') {
+    // Log the endpoint but remove any key/secret if accidentally included
+    const sanitizedEndpoint = value.replace(/\?.*$/, '');
+    console.log(`Endpoint value: ${sanitizedEndpoint}`);
+  }
   return value;
 }
 
@@ -20,8 +27,9 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Methods': 'POST',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
 }
@@ -29,28 +37,43 @@ export async function OPTIONS() {
 // Handle POST request
 export async function POST(req: Request) {
   console.log('POST request received');
-  console.log('Process env keys:', Object.keys(process.env));
+  console.log('Process env keys:', Object.keys(process.env).filter(key => !key.toLowerCase().includes('key')));
+  console.log('Request URL:', req.url);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
   
   try {
     // Get and validate environment variables
+    console.log('Starting environment variable validation...');
     const azureApiKey = getRequiredEnvVar('AZURE_OPENAI_API_KEY');
     const azureEndpoint = getRequiredEnvVar('AZURE_OPENAI_ENDPOINT');
     const deploymentName = getRequiredEnvVar('AZURE_OPENAI_DEPLOYMENT_NAME');
+    console.log('Environment variables validated successfully');
 
     // Initialize the Azure OpenAI client
+    console.log('Initializing Azure OpenAI client...');
     const client = new OpenAIClient(
       azureEndpoint,
       new AzureKeyCredential(azureApiKey)
     );
+    console.log('Azure OpenAI client initialized');
 
     // Validate request body
+    console.log('Parsing request body...');
     const body = await req.json();
     const { userName, userTitle, propertyName, reviewText } = body;
+    console.log('Request body parsed:', { userName: !!userName, userTitle: !!userTitle, propertyName: !!propertyName, reviewText: !!reviewText });
 
     if (!userName || !userTitle || !propertyName || !reviewText) {
+      console.error('Missing required fields:', { userName: !userName, userTitle: !userTitle, propertyName: !propertyName, reviewText: !reviewText });
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
+          }
+        }
       );
     }
 
@@ -106,32 +129,54 @@ ${reviewText}`;
     );
   } catch (error) {
     console.error('Detailed error:', error);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+    }
     
     let errorMessage = 'An unknown error occurred';
     let statusCode = 500;
+    let errorDetails = {};
 
     if (error instanceof Error) {
       errorMessage = error.message;
-      console.log('Error type:', error.constructor.name);
-      console.log('Error message:', error.message);
+      errorDetails = {
+        type: error.constructor.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      };
       
-      // Check for specific error types
+      // Enhanced error type checking
       if (errorMessage.includes('environment variable')) {
-        statusCode = 503; // Service Unavailable
+        statusCode = 503;
         errorMessage = 'Azure OpenAI credentials not properly configured';
+        errorDetails = {
+          ...errorDetails,
+          availableVars: Object.keys(process.env).filter(key => !key.toLowerCase().includes('key')),
+          nodeEnv: process.env.NODE_ENV,
+          runtimeEnv: process.env.RUNTIME_ENVIRONMENT
+        };
       } else if (errorMessage.includes('Missing required fields')) {
-        statusCode = 400; // Bad Request
+        statusCode = 400;
       } else if (errorMessage.includes('authentication failed') || errorMessage.includes('unauthorized')) {
         statusCode = 503;
         errorMessage = 'Azure OpenAI authentication failed';
+        errorDetails = {
+          ...errorDetails,
+          endpoint: process.env.AZURE_OPENAI_ENDPOINT ? 'Endpoint is set' : 'Endpoint is missing'
+        };
       }
     }
 
     return NextResponse.json(
-      { error: `Failed to generate response: ${errorMessage}` },
+      { 
+        error: `Failed to generate response: ${errorMessage}`,
+        details: errorDetails
+      },
       { 
         status: statusCode,
         headers: {
+          'Access-Control-Allow-Origin': '*',
           'Content-Type': 'application/json',
         },
       }
