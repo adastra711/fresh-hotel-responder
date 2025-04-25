@@ -25,6 +25,6 @@ jobs:
           action: "upload"
           app_location: "/"
           api_location: "app/api"
-          output_location: ".next"
-          app_build_command: "npm run build"
+          output_location: "out"
+          app_build_command: "npm run build && npm run export"
           api_build_command: "npm run build" 
