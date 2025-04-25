@@ -18,6 +18,7 @@ export default function Home() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setResponse('');
     
     try {
       const res = await fetch('/api/generate-response', {
@@ -28,15 +29,21 @@ export default function Home() {
         body: JSON.stringify(formData),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error('Failed to generate response');
+        throw new Error(data.error || 'Failed to generate response');
       }
 
-      const data = await res.json();
+      if (!data.response) {
+        throw new Error('No response generated');
+      }
+
       setResponse(data.response);
     } catch (err) {
-      setError('An error occurred while generating the response. Please try again.');
-      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(`An error occurred while generating the response: ${errorMessage}`);
+      console.error('Error details:', err);
     } finally {
       setLoading(false);
     }

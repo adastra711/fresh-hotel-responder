@@ -1,0 +1,20 @@
+{
+  "name": "hotel-review-responder-api",
+  "version": "1.0.0",
+  "description": "Azure Functions for hotel review responder",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prestart": "npm run build",
+    "start": "func start",
+    "test": "echo \"No tests yet...\" && exit 0"
+  },
+  "dependencies": {
+    "@azure/functions": "^3.5.1",
+    "@azure/openai": "^1.0.0-beta.6"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.5",
+    "@types/node": "^18.0.0"
+  }
+} 
