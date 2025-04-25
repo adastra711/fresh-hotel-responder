@@ -4,16 +4,10 @@
       "route": "/api/*",
       "methods": ["GET", "POST"],
       "rewrite": "/api/generate-response"
-    },
-    {
-      "route": "/*",
-      "serve": "/index.html",
-      "statusCode": 200
     }
   ],
   "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/images/*", "/css/*", "/js/*"]
+    "rewrite": "/index.html"
   },
   "globalHeaders": {
     "Content-Security-Policy": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://*.azurestaticapps.net https://*.openai.azure.com; font-src 'self' data:; img-src 'self' data: blob:;",
