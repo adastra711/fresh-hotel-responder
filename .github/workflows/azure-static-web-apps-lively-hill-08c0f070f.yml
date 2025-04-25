@@ -1,5 +1,6 @@
 name: Azure Static Web Apps CI/CD
 
+# Workflow for building and deploying a Next.js site to Azure Static Web Apps
 on:
   push:
     branches:
