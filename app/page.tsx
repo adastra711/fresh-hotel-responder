@@ -100,10 +100,10 @@ export default function Home() {
       <main>
         <header className="bg-[#4a5568] shadow-md">
           <div className="max-w-6xl mx-auto px-4 py-6">
-            <div className="w-[180px] text-white">
+            <div className="h-[60px] w-[240px] relative">
               <Logo />
             </div>
-            <p className="text-white/80 italic mt-2 text-lg">
+            <p className="text-white/80 italic mt-4 text-lg">
               A professional review response generator
             </p>
           </div>
