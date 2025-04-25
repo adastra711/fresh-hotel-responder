@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build Next.js app
-        run: npm run build && npm run export
+        run: npm run build
       - name: Build Azure Functions
         run: |
           cd api
@@ -38,5 +38,5 @@ jobs:
           app_location: "/"
           api_location: "api"
           output_location: "out"
-          app_build_command: "npm run build && npm run export"
+          app_build_command: "npm run build"
           api_build_command: "cd api && npm install && npm run build" 

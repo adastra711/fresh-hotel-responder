@@ -1,5 +1,12 @@
-import { AzureFunction, Context, HttpRequest } from "@azure/functions";
+import { HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
+
+interface RequestBody {
+  userName: string;
+  userTitle: string;
+  propertyName: string;
+  reviewText: string;
+}
 
 const client = new OpenAIClient(
   process.env.AZURE_OPENAI_ENDPOINT || "",
@@ -8,9 +15,10 @@ const client = new OpenAIClient(
 
 const DEPLOYMENT_NAME = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4-turbo";
 
-const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
+export async function generateResponse(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   try {
-    const { userName, userTitle, propertyName, reviewText } = req.body;
+    const body = await request.json() as RequestBody;
+    const { userName, userTitle, propertyName, reviewText } = body;
 
     const prompt = `You are a professional hotel manager. Write a personalized response to the following guest review. The response should be warm, professional, and address specific points mentioned in the review. Keep the response under 500 characters.
 
@@ -47,23 +55,21 @@ ${propertyName}`;
 
     const generatedResponse = response.choices[0]?.message?.content || '';
 
-    context.res = {
+    return {
       status: 200,
-      body: { response: generatedResponse },
+      jsonBody: { response: generatedResponse },
       headers: {
         'Content-Type': 'application/json'
       }
     };
   } catch (error) {
-    context.log.error('Error generating response:', error);
-    context.res = {
+    context.error('Error generating response:', error);
+    return {
       status: 500,
-      body: { error: 'Failed to generate response' },
+      jsonBody: { error: 'Failed to generate response' },
       headers: {
         'Content-Type': 'application/json'
       }
     };
   }
-};
-
-export default httpTrigger; 
+} 
