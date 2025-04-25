@@ -1,185 +1,64 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 
-function App() {
-  const [formData, setFormData] = useState({
-    userName: '',
-    userTitle: '',
-    propertyName: '',
-    reviewText: '',
-  });
+const App: React.FC = () => {
+  const [review, setReview] = useState('');
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setResponse('');
-    
     try {
-      const res = await fetch('/api/generate-response', {
+      const result = await fetch('/api/generate-response', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ review }),
       });
-
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error(`Received non-JSON response: ${await res.text()}`);
-      }
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || data.details || 'Failed to generate response');
-      }
-
-      if (!data.response) {
-        throw new Error('No response generated');
-      }
-
+      const data = await result.json();
       setResponse(data.response);
-    } catch (err) {
-      let errorMessage = 'An unexpected error occurred';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-        console.error('Error details:', err);
-      } else {
-        console.error('Unknown error:', err);
-      }
-      setError(`An error occurred while generating the response: ${errorMessage}`);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error:', error);
+      setResponse('Error generating response. Please try again.');
     }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-gray-700 shadow-md">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <h1 className="text-white text-2xl font-bold">Hotel Review Responder</h1>
-          <p className="text-white/80 italic mt-2">
-            A professional review response generator
-          </p>
-        </div>
+    <div className="App">
+      <header className="App-header">
+        <h1>Fresh Hotel Responder</h1>
       </header>
-
-      <main className="max-w-6xl mx-auto px-4 py-12">
-        <div className="bg-white rounded shadow-sm p-8">
-          <h2 className="text-gray-800 text-2xl font-light mb-8">
-            Response Generator
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <label className="block text-sm text-gray-700 mb-2" htmlFor="userName">
-                  Your Name *
-                </label>
-                <input
-                  id="userName"
-                  type="text"
-                  name="userName"
-                  value={formData.userName}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
-                  placeholder="Enter your name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-2" htmlFor="userTitle">
-                  Your Title *
-                </label>
-                <input
-                  id="userTitle"
-                  type="text"
-                  name="userTitle"
-                  value={formData.userTitle}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
-                  placeholder="Enter your title"
-                />
-              </div>
+      <main className="App-main">
+        <form onSubmit={handleSubmit} className="review-form">
+          <div className="form-group">
+            <label htmlFor="review">Hotel Review:</label>
+            <textarea
+              id="review"
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+              placeholder="Paste the hotel review here..."
+              rows={5}
+              required
+            />
+          </div>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Generating...' : 'Generate Response'}
+          </button>
+        </form>
+        {response && (
+          <div className="response-section">
+            <h2>Generated Response:</h2>
+            <div className="response-content">
+              {response}
             </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-2" htmlFor="propertyName">
-                Property Name *
-              </label>
-              <input
-                id="propertyName"
-                type="text"
-                name="propertyName"
-                value={formData.propertyName}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
-                placeholder="Enter property name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-2" htmlFor="reviewText">
-                Guest Review *
-              </label>
-              <textarea
-                id="reviewText"
-                name="reviewText"
-                value={formData.reviewText}
-                onChange={handleChange}
-                required
-                rows={6}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-gray-400 resize-none"
-                placeholder="Paste the guest review here"
-              />
-            </div>
-
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Generating Response...' : 'Generate Response'}
-              </button>
-            </div>
-          </form>
-
-          {error && (
-            <div className="mt-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded text-sm">
-              <p className="font-medium mb-1">Error:</p>
-              <p className="whitespace-pre-wrap">{error}</p>
-            </div>
-          )}
-
-          {response && (
-            <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded">
-              <h3 className="text-lg text-gray-800 mb-4 font-medium">
-                Generated Response
-              </h3>
-              <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {response}
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );
-}
+};
 
-export default App; 
+export default App;
