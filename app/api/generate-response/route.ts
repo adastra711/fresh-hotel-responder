@@ -7,7 +7,7 @@ const client = new OpenAIClient(
   new AzureKeyCredential("Ct9JSYy5Ewlwn9NnWmAik6ynJLl3VvJ9vodQTC3DTn5G9hgnrwnZJQQJ99BDACYeBjFXJ3w3AAABACOG1FKb") // Your Azure OpenAI API key
 );
 
-const DEPLOYMENT_NAME = "gpt-4"; // Your model deployment name
+const DEPLOYMENT_NAME = "gpt-4-turbo"; // Your model deployment name
 
 export async function POST(request: Request) {
   try {

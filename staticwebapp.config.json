@@ -1,0 +1,16 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/images/*.{png,jpg,gif}", "/css/*"]
+  },
+  "platform": {
+    "apiRuntime": "node:18"
+  },
+  "auth": {
+    "identityProviders": {
+      "azureStaticWebApps": {
+        "deploymentToken": "eb01f29a79714857364120b513b2ec4343d95cf69f3a629ee29f84b6e9723cbe06-31986893-2c98-4a50-879b-d80add72589401026120b8de0b10"
+      }
+    }
+  }
+} 
