@@ -24,7 +24,7 @@ jobs:
           node-version: '18'
       - name: Install dependencies
         run: npm install
-      - name: Build Next.js app
+      - name: Build React app
         run: npm run build
       - name: Build Azure Functions
         run: |
@@ -40,7 +40,7 @@ jobs:
           action: "upload"
           app_location: "/"
           api_location: "functions"
-          output_location: "out"
+          output_location: "build"
           app_build_command: "npm run build"
           api_build_command: "cd functions && npm install && npm run build"
 
