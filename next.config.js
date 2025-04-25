@@ -8,6 +8,9 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
+  output: 'standalone',
+  trailingSlash: false,
+  poweredByHeader: false,
 }
 
 module.exports = nextConfig 
