@@ -8,12 +8,22 @@ interface RequestBody {
   reviewText: string;
 }
 
-const client = new OpenAIClient(
-  process.env.AZURE_OPENAI_ENDPOINT || "",
-  new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY || "")
-);
+// Validate environment variables
+const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+const apiKey = process.env.AZURE_OPENAI_API_KEY;
+const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-35-turbo";
 
-const DEPLOYMENT_NAME = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-35-turbo";
+if (!endpoint || !apiKey) {
+  console.error('Missing required environment variables:');
+  console.error('AZURE_OPENAI_ENDPOINT:', endpoint ? 'set' : 'missing');
+  console.error('AZURE_OPENAI_API_KEY:', apiKey ? 'set' : 'missing');
+  throw new Error('Missing required Azure OpenAI configuration');
+}
+
+const client = new OpenAIClient(
+  endpoint,
+  new AzureKeyCredential(apiKey)
+);
 
 const httpTrigger: AzureFunction = async function (
   context: Context,
@@ -60,8 +70,10 @@ The response should:
 4. End with a sincere invitation to return
 5. Be between 100-200 words`;
 
+    context.log.info('Calling Azure OpenAI with deployment:', deploymentName);
+    
     const response = await client.getChatCompletions(
-      DEPLOYMENT_NAME,
+      deploymentName,
       [
         {
           role: "system",
@@ -93,11 +105,14 @@ The response should:
     };
   } catch (error) {
     context.log.error("Error generating response:", error);
+    context.log.error("Error details:", JSON.stringify(error, null, 2));
+    
     context.res = {
       ...context.res,
       status: 500,
       body: {
         error: "An error occurred while generating the response. Please try again later.",
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
     };
   }
